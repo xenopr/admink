@@ -1,0 +1,644 @@
+swagger: "2.0"
+info:
+  title: "GEOREST"
+  version: "1.0.0"
+  description: "Документация на функции API REST-сервера"
+  contact:
+    name: "Протасов Андрей"
+
+
+basePath: "/"
+tags:
+- name: "test"
+  description: "Контроллеры тестирования"
+- name: "Auth"
+  description: "Аутентификация и авторизация"
+- name: "Log"
+  description: "Работа с журналом"  
+- name: "Dirs"
+  description: "Запрос справочников из базы"    
+- name: "Role"
+  description: "Редактор ролей"      
+- name: "User"
+  description: "Редактор пользователей"   
+schemes:
+- "http"
+paths:
+  /:
+    get:
+      tags:
+      - "test"
+      summary: "Сервер живой ?"
+      description: "Проверка наличия REST-сервера в онлайне"
+      produces:
+      - "text"
+      responses:
+        "200":
+          description: "Запущен."
+  /testjwt:
+    get:
+      tags:
+      - "test"
+      summary: "Тест токена авторизации и аутентификации"
+      description: "Проверка токена доступа"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "Токен действителен, содержимое токена"
+          schema:
+            $ref: "#/definitions/Token"     
+        "401":
+          description: "Токен недействующий, содержимое токена если возможно" 
+          schema:
+            $ref: "#/definitions/Token" 
+      security:
+      - JWT:             
+  /testad:
+    get:
+      tags:
+      - "test"
+      summary: "Тест подключения к Active Directory"
+      description: "Проверка активности AD"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "Тестовая выборка из AD"  
+        "401":
+          description: "Не авторизован, нет права TEST"    
+      security:
+      - JWT:          
+  /testdb:
+    get:
+      tags:
+      - "test"
+      summary: "Тест подключения к базе данных Oracle"
+      description: "Проверка активности БД oracle"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "Одна строка из БД."  
+        "401":
+          description: "Не авторизован, нет права TEST"    
+      security:
+      - JWT:     
+  /log100:
+    get:
+      tags:
+      - "Log"
+      summary: "Получить 100 строк журнала"
+      description: "Получить 100 последних строк журнала"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "100 строк"  
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+      security:
+      - JWT:       
+  /log:
+    get:
+      tags:
+      - "Log"
+      summary: "Получить строки журнала за период"
+      description: "Получить строки журнала за период"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "dtf"
+        in: "query"
+        description: "Дата с"
+        required: true
+        type: "string"
+        format: "date-time"
+      - name: "dtt"
+        in: "query"
+        description: "Дата по"
+        required: true
+        type: "string"
+        format: "date-time"         
+      responses:
+        "200":
+          description: "Строки"  
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+      security:
+      - JWT:                     
+  /auth:
+    post:
+      tags:
+      - "Auth"
+      summary: "Авторизация и аутентификация"
+      description: "На входе шифрованый объект логин, на выходе - jwt-токен"
+      operationId: "auth"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "login"
+        description: "Шифрованый логин"
+        required: true
+        schema:
+          $ref: "#/definitions/LoginCrypted"
+      responses:
+        "200":
+          description: "Успешная аутентификация, токен создан"
+          schema: 
+            $ref: "#/definitions/AuthResponse"
+        "401":
+          description: "Отказ аутентификации, не авторизован"
+          schema: 
+            $ref: "#/definitions/AuthResponse"
+        "403":
+          description: "Системная ошибка, проблемы с доступом к active directory, к oracle"
+    delete:
+      tags:
+      - "Auth"
+      summary: "Деавторизация"
+      description: "В журнал вносится событие деавторизация, на клиенте вышли."
+      operationId: "auth"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "В журнал внесится событие выход"
+  /dir/rights:
+    get:
+      tags:
+      - "Dirs"
+      summary: "Получить справочник прав"
+      description: "Получить список всех возможных прав (RIGHTS) обрабатываемых REST-сервером"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "Список" 
+          schema:
+            type: "array"
+        "401":
+          description: "Не авторизован, нет права ADMIN"   
+      security:
+      - JWT:  
+          description: "В журнал внесится событие выход"
+  /dir/roles:
+    get:
+      tags:
+      - "Dirs"
+      summary: "Получить справочник ролей"
+      description: "Получить список ролей"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "Список" 
+          schema:
+            type: "array"
+        "401":
+          description: "Не авторизован, нет права ADMIN"   
+      security:
+      - JWT:  
+
+  /role:
+    get:
+      tags:
+      - "Role"
+      summary: "Получить весь список ролей"
+      description: "Получить список ролей для редактора ролей админки"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "Список" 
+          schema:
+            type: "array"
+            items:
+        "401":
+          description: "Не авторизован, нет права ADMIN"   
+      security:
+      - JWT:      
+    post:
+      tags:
+      - "Role"
+      summary: "Создать роль"
+      description: "Создать новую роль"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:  
+      - name: "body"
+        in: "body"
+        description: "Описание роли и перечень прав"
+        required: true
+        schema:
+          $ref: "#/definitions/Role"             
+      responses:
+        "201":
+          description: "ID новой роли. Сделано."  
+          schema:
+            type: "integer"
+        "406":
+          description: "Отказ. Текст ошибки."    
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+      security:
+      - JWT:      
+  /role/{roleid}:    
+    get:
+      tags:
+      - "Role"
+      summary: "Получить одну роль"
+      description: "Получить инфу по роли для редактора ролей админки"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "roleid"
+        in: "path"
+        description: "ИД выбираемой роли"
+        required: true
+        type: "integer"
+        format: "int64"         
+      responses:
+        "200":
+          description: "Роль"
+          schema:
+            type: "array"
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+        "404":
+          description: "Роль не найдена"      
+      security:
+      - JWT:    
+    put:
+      tags:
+      - "Role"
+      summary: "Изменить роль"
+      description: "Редактировать существующую роль"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:  
+      - name: "roleid"
+        in: "path"
+        description: "ИД выбираемой роли"
+        required: true
+        type: "integer"
+        format: "int64"
+      - name: "body"
+        in: "body"
+        description: "Описание роли и перечень прав"
+        required: true
+        schema:
+          $ref: "#/definitions/Role"             
+      responses:
+        "202":
+          description: "Сделано"  
+        "404":
+          description: "Отказ. Текст ошибки." 
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+      security:
+      - JWT:         
+    delete:
+      tags:
+      - "Role"
+      summary: "Удалить роль"
+      description: "Удалить существующую роль"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "roleid"
+        in: "path"
+        description: "ИД выбираемой роли"
+        required: true
+        type: "integer"
+        format: "int64"           
+      responses:
+        "204":
+          description: "Сделано"  
+        "404":
+          description: "Отказ. Текст ошибки." 
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+      security:
+      - JWT:
+  /user:
+    get:
+      tags:
+      - "User"
+      summary: "Получить весь список пользователей"
+      description: "Получить список пользователей для редактора пользователей админки"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "Список" 
+          schema:
+            type: "array"
+            items:
+        "401":
+          description: "Не авторизован, нет права ADMIN"   
+      security:
+      - JWT:        
+    post:
+      tags:
+      - "User"
+      summary: "Создать пользователя"
+      description: "Создать нового пользователя"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:  
+      - name: "body"
+        in: "body"
+        description: "Атрибуты пользователя и перечень ролей"
+        required: true
+        schema:
+          $ref: "#/definitions/User"             
+      responses:
+        "201":
+          description: "ID нового пользователя. Сделано."  
+          schema:
+            type: "integer"
+        "406":
+          description: "Отказ. Текст ошибки."    
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+      security:
+      - JWT:      
+  /user/{userid}:    
+    get:
+      tags:
+      - "User"
+      summary: "Получить одного пользователя"
+      description: "Получить инфу по пользователю для редактора пользователей админки"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "userid"
+        in: "path"
+        description: "ИД выбраного пользователя"
+        required: true
+        type: "integer"
+        format: "int64"         
+      responses:
+        "200":
+          description: "User"
+          schema:
+            type: "array"
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+        "404":
+          description: "Роль не найдена"      
+      security:
+      - JWT:    
+    put:
+      tags:
+      - "User"
+      summary: "Изменить пользователя"
+      description: "Редактировать существующего пользователя"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:  
+      - name: "userid"
+        in: "path"
+        description: "ИД выбранного пользователя"
+        required: true
+        type: "integer"
+        format: "int64"
+      - name: "body"
+        in: "body"
+        description: "Описание пользователя и перечень ролей"
+        required: true
+        schema:
+          $ref: "#/definitions/User"             
+      responses:
+        "202":
+          description: "Сделано"  
+        "404":
+          description: "Отказ. Текст ошибки." 
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+      security:
+      - JWT:         
+    delete:
+      tags:
+      - "User"
+      summary: "Удалить пользователя"
+      description: "Удалить существующего пользователя (если небыло ссылок на него)"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "userid"
+        in: "path"
+        description: "ИД выбранного пользователя"
+        required: true
+        type: "integer"
+        format: "int64"           
+      responses:
+        "204":
+          description: "Сделано"  
+        "404":
+          description: "Отказ. Текст ошибки." 
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+      security:
+      - JWT:  
+  /user/{userid}/activeto:         
+    put:
+      tags:
+      - "User"
+      summary: "Вкл-выкл пользователя"
+      description: "Включить, выключить с указанной даты аккаунт пользователя"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:  
+      - name: "userid"
+        in: "path"
+        description: "ИД выбранного пользователя"
+        required: true
+        type: "integer"
+        format: "int64"
+      - name: "activeto"
+        in: "body"
+        description: "Дата после которой аккаунт перестанет действовать"
+        required: false
+        type: "object"
+        properties:
+          activeto:
+            type: "string"
+            format: "date-time"
+      responses:
+        "202":
+          description: "Сделано"  
+        "404":
+          description: "Отказ. Текст ошибки." 
+        "401":
+          description: "Не авторизован, нет права ADMIN"    
+      security:
+      - JWT:           
+  /user/findad:
+    get:
+      tags:
+      - "User"
+      summary: "Найти в AD"
+      description: "Получить список пользователей поиском в active directory"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "q"
+        in: "query"
+        description: "От 3х первых символов email либо ФИО"
+        required: true
+        type: "string"      
+      responses:
+        "200":
+          description: "Список" 
+          schema:
+            type: "array"
+            items: 
+        "401":
+          description: "Не авторизован, нет права ADMIN"   
+      security:
+      - JWT:               
+                  
+definitions:
+  LoginCrypted:
+    type: "object"
+    properties:
+      login:
+        type: "string"
+        format: "string"
+        description: "шифрованая строка формата base64 с именем, паролем, текущей датой-временем"
+  Login:
+    type: "object"
+    properties:
+      login:
+        type: "string"
+        format: "string"
+        description: "email пользователя"
+      password:
+        type: "string"
+        format: "string"
+        description: "пароль AD пользователя"
+      date:
+        type: "string"
+        format: "date-time"
+        description: "Дата время создания запроса на аутентификацию"
+  AuthResponse:
+    type: "object"
+    properties:
+      token:
+        type: "string"
+        format: "string"
+        description: "JWT-токен упакованый строкой"
+      error:
+        type: "string"
+        format: "string"
+        description: "Текст отказа"
+      level:
+        type: "string"
+        format: "string"   
+        description: "Этап авторизации, текст"
+  Token:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+        description: "ID пользователя, AUTH.USERA.ID"
+      login:
+        type: "string"
+        description: "Логин пользователя, email"
+      username:
+        type: "string"
+        description: "ФИО"
+      subdividion:
+        type: "string"
+        description: "Подразделение"
+      position:
+        type: "string"
+        description: "Должность"
+      description:
+        type: "string"
+        description: "Комментарий администратора"  
+      roles:
+        description: "Перечень имен ролей"
+        type: "array"
+        items:
+          type: "string"
+      rights:
+        description: "Перечень наименований прав пользователя"
+        type: "array"
+        items:
+          type: "string"
+      iat: 
+        type: "integer" 
+        description: "Дата время выдачи токена в unix-секундах"
+      exp: 
+        type: "integer" 
+        description: "Дата время срока токена в unix-секундах"
+  Role:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+        description: "Наименование"
+      description:
+        type: "string"
+        description: "Комментарий"
+      rights:
+        description: "Перечень прав роли"        
+        type: "array"
+        items:
+          type: "integer"
+  User:
+    type: "object"
+    properties:
+      login:
+        type: "string"
+        description: "email"
+      username:
+        type: "string"
+        description: "ФИО"
+      position:
+        type: "string"
+        description: "Должность"
+      subdivision:
+        type: "string"
+        description: "Подразделение"    
+      description:
+        type: "string"
+        description: "Комментарий"
+      roles:
+        description: "Перечень ролей пользователя"        
+        type: "array"
+        items:
+          type: "integer"          
+securityDefinitions:
+  JWT:
+    type: "apiKey"
+    in: "header"
+    name: "Authorization"   
+    description: "Упакованый токен JWT выданый функцией авторизации"    
+externalDocs:
+  description: "OpenAPI Specification"
+  url: "https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md"
